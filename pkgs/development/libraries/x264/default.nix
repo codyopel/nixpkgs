@@ -1,26 +1,36 @@
-{stdenv, fetchurl, yasm}:
+{ stdenv, fetchgit, yasm }:
 
+with stdenv.lib;
 stdenv.mkDerivation rec {
-  version = "snapshot-20130424-2245-stable";
-  name = "x264-20130424_2245";
+  name = "x264-${version}";
+  version = "2014.12.12"; # Date of commit used Y.M.D
 
-  src = fetchurl {
-    url = "ftp://ftp.videolan.org/pub/videolan/x264/snapshots/x264-${version}.tar.bz2";
-    sha256 = "0vzyqsgrm9k3hzka2p8ib92jl0ha8d4267r2rb3pr9gmpjaj9azk";
+  src = fetchgit {
+    url = "git://git.videolan.org/x264.git";
+    # Use commits from the stable branch instead of master
+    # http://git.videolan.org/?p=x264.git;a=shortlog;h=refs/heads/stable
+    rev = "6a301b6ee0ae8c78fb704e1cd86f4e861070f641";
+    sha256 = "1ynziyagkw9smjx8az4fwx8zf9bql36vjgzhdh876hz3yzilw993";
   };
 
   patchPhase = ''
-    sed -i s,/bin/bash,${stdenv.shell}, configure version.sh
+    patchShebangs configure
+    patchShebangs version.sh
   '';
 
-  configureFlags = [ "--enable-shared" ]
-    ++ stdenv.lib.optional (!stdenv.isi686) "--enable-pic";
+  # --disable-static is not a configure option
+  dontDisableStatic = true;
 
-  buildInputs = [ yasm ];
+  configureFlags = [ "--enable-shared" ]
+    ++ optional (!stdenv.isi686) "--enable-pic";
+
+  nativeBuildInputs = [ yasm ];
 
   meta = {
-    description = "library for encoding H264/AVC video streams";
-    homepage = http://www.videolan.org/developers/x264.html;
-    license = "GPL";
+    description = "Library and application for encoding H.264/MPEG-4 AVC video streams";
+    homepage    = http://www.videolan.org/developers/x264.html;
+    license     = licenses.gpl2;
+    maintainers = with maintainers; [ codyopel ];
+    platforms   = platforms.all;
   };
 }
