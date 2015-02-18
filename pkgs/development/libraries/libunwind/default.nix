@@ -1,7 +1,12 @@
-{stdenv, fetchurl, xz}:
+{ stdenv, fetchurl, xz
 
+
+}:
+
+with stdenv.lib;
 stdenv.mkDerivation rec {
-  name = "libunwind-1.1";
+  name = "libunwind-${version}";
+  version = "1.1";
   
   src = fetchurl {
     url = "mirror://savannah/libunwind/${name}.tar.gz";
@@ -11,13 +16,17 @@ stdenv.mkDerivation rec {
   propagatedBuildInputs = [ xz ];
 
   NIX_CFLAGS_COMPILE = if stdenv.system == "x86_64-linux" then "-fPIC" else "";
+
   preInstall = ''
     mkdir -p "$out/lib"
     touch "$out/lib/libunwind-generic.so"
   '';
   
   meta = {
-    homepage = http://www.nongnu.org/libunwind;
     description = "A portable and efficient API to determine the call-chain of a program";
+    homepage    = http://www.nongnu.org/libunwind/;
+    license     = licenses.mit;
+    platforms   = platforms.linux;
+    maintainers = with maintainers; [ codyopel ];
   };
 }
