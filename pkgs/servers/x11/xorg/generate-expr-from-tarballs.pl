@@ -1,4 +1,5 @@
-#! /usr/bin/perl -w
+#!/usr/bin/env perl
+
 
 # Typical command to generate the list of tarballs:
 
@@ -224,7 +225,7 @@ while (<>) {
 
 print "\nWRITE OUT\n";
 
-open OUT, ">default.nix";
+open OUT, ">default2.nix";
 
 print OUT "";
 print OUT <<EOF;
