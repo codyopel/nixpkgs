@@ -7093,10 +7093,8 @@ let
 
   oniguruma = callPackage ../development/libraries/oniguruma { };
 
-  openal = callPackage ../development/libraries/openal { };
-
-  # added because I hope that it has been easier to compile on x86 (for blender)
-  openalSoft = callPackage ../development/libraries/openal-soft { };
+  openal-soft = callPackage ../development/libraries/openal-soft { };
+  openal = openal-soft;
 
   openbabel = callPackage ../development/libraries/openbabel { };
 
