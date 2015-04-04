@@ -1,20 +1,54 @@
-{ stdenv, fetchurl, alsaLib, cmake }:
+{ stdenv, fetchurl, cmake
+, alsaLib
+, ffmpeg
+, jack2
+, portaudio
+, pulseaudio
+, qt4
+libsndio
+fluidsynth
+}:
+ffmepg (ffmpeg?)
+sdl2
 
-let version = "1.7.411"; in
+fluidsynth
+
+alsa
+oss
+solaris
+sndio
+qsa
+dsound
+mmdevapi
+winmm
+portaudio
+pulseaudio
+coreaudio
+opensl
+wave
+
+let
+  inherit (stdenv) isLinux;
+  inherit (stdenv.lib) optional;
+in
+
 stdenv.mkDerivation rec {
   name = "openal-${version}";
+  version = "1.16.0";
 
   src = fetchurl {
-    url = "http://connect.creativelabs.com/openal/Downloads/openal-soft-${version}.bz2";
+    url = "http://kcat.strangesoft.net/openal-releases/openal-soft-${version}.tar.bz2";
     sha256 = "1nbqvg08hy5p2cxy2i2mmh2szmbpsg2dcvhr61iplyisw04rwc8i";
     name = "openal-soft-${version}.tar.bz2";
   };
 
-  buildInputs = [ cmake ] ++ stdenv.lib.optional (!stdenv.isDarwin) alsaLib;
+  nativeBuildInputs = [ cmake ];
+
+  buildInputs = [ ] ++ optional isLinux alsaLib;
 
   meta = {
     description = "Cross-platform 3D audio API";
-
+    homepage = http://www.openal.org/;
     longDescription = ''
       OpenAL is a cross-platform 3D audio API appropriate for use with
       gaming applications and many other types of audio applications.
@@ -29,8 +63,8 @@ stdenv.mkDerivation rec {
       represents the position where the sources are heard -- rendering
       is done from the perspective of the Listener.
     '';
-
-    homepage = http://www.openal.org/;
-    license = stdenv.lib.licenses.gpl2Plus;
+    license = licenses.gpl2Plus;
+    maintainers = with maintainers; [ codyopel ];
+    platforms = platforms.all;
   };
 }
