@@ -27,7 +27,7 @@ stdenv.mkDerivation rec {
   };
 
   configureFLags = [
-    "--enable-examples"
+    "--disable-examples"
   ];
 
   nativeBuildInput = [ pkgconfig ];

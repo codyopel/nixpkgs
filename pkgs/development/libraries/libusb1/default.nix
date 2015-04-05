@@ -1,4 +1,11 @@
-{ stdenv, fetchurl, pkgconfig, udev ? null }:
+{ stdenv, fetchurl, fetchpatch, automake, pkgconfig
+, udev ? null
+}:
+
+let
+  inherit (stdenv) isLinux;
+  inherit (stdenv.lib) optional;
+in
 
 stdenv.mkDerivation rec {
   name = "libusb-1.0.19";
@@ -8,15 +15,19 @@ stdenv.mkDerivation rec {
     sha256 = "0h38p9rxfpg9vkrbyb120i1diq57qcln82h5fr7hvy82c20jql3c";
   };
 
-  buildInputs = [ pkgconfig ];
-  propagatedBuildInputs = stdenv.lib.optional stdenv.isLinux udev;
+  configureFlags = [ "--enable-udev" ];
 
-  NIX_LDFLAGS = stdenv.lib.optionalString stdenv.isLinux "-lgcc_s";
+  buildInputs = [ automake pkgconfig ];
 
-  meta = {
-    homepage = http://www.libusb.info;
+  propagatedBuildInputs = optional isLinux udev;
+
+  #NIX_LDFLAGS = stdenv.lib.optionalString stdenv.isLinux "-lgcc_s";
+
+  meta = with stdenv.lib; {
     description = "User-space USB library";
-    platforms = stdenv.lib.platforms.unix;
-    maintainers = [ stdenv.lib.maintainers.urkud ];
+    homepage = http://www.libusb.info;
+    #license = licenses.;
+    maintainers = with maintainers; [ urkud ];
+    platforms = platforms.unix;
   };
 }
