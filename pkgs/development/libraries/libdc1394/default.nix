@@ -1,17 +1,22 @@
-{ stdenv, fetchurl
-, libraw1394, libusb1, libXext
-, examplesSupport ? true,libX11 ? null, mesa ? null, SDL ? null, v4l_utils ? null
+{ stdenv, fetchurl, pkgconfig
+, libraw1394, libusb1
+, examplesSupport ? true, libX11 ? null, libXext ? null, libXv ? null, mesa ? null, SDL ? null, libv4l ? null
 }:
 
-assert examplesSupport -> libX11 != null
-                       && mesa != null
-                       && SDL != null
-                       && v4l_utils != null;
+# not detecting libusb1
 
 let
   inherit (stdenv) isLinux;
   inherit (stdenv.lib) optional optionals;
 in
+
+assert examplesSupport -> libX11 != null
+                       && libXext != null
+                       && libXv != null
+                       && mesa != null
+                       && SDL != null
+                       && libv4l != null
+                       && isLinux;
 
 stdenv.mkDerivation rec {
   name = "libdc1394-2.2.3";
@@ -25,15 +30,17 @@ stdenv.mkDerivation rec {
     "--enable-examples"
   ];
 
-  buildInputs = [ libusb1 SDL ]
-    ++ optional isLinux [ libraw1394 ]
-    ++ optionals examplesSupport [ libX11 libXext mesa SDL v4l_utils ];
+  nativeBuildInput = [ pkgconfig ];
 
-  meta = {
+  buildInputs = [ libusb1 ]
+    ++ optional isLinux [ libraw1394 ]
+    ++ optionals (examplesSupport && isLinux) [ libX11 libXext libXv mesa SDL libv4l ];
+
+  meta = with stdenv.lib; {
     homepage = http://sourceforge.net/projects/libdc1394/;
     description = "Capture and control API for IIDC compliant cameras";
-    license = stdenv.lib.licenses.lgpl21Plus;
-    maintainers = [ stdenv.lib.maintainers.viric ];
-    platforms = stdenv.lib.platforms.unix;
+    license = licenses.lgpl21Plus;
+    maintainers = with maintainers; [ codyopel viric ];
+    platforms = platforms.unix;
   };
 }
