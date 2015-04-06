@@ -1373,9 +1373,7 @@ let
 
   ftop = callPackage ../os-specific/linux/ftop { };
 
-  fuppes = callPackage ../tools/networking/fuppes {
-    ffmpeg = ffmpeg_0_5;
-  };
+  fuppes = callPackage ../tools/networking/fuppes { };
 
   fsfs = callPackage ../tools/filesystems/fsfs { };
 
