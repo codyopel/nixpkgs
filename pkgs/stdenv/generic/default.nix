@@ -1,7 +1,7 @@
 let lib = import ../../../lib; in lib.makeOverridable (
 
 { system, name ? "stdenv", preHook ? "", initialPath, cc, shell
-, allowedRequisites ? null, extraAttrs ? {}, overrides ? (pkgs: {}), config
+, allowedRequisites ? null, extraAttrs ? { }, overrides ? (pkgs: { }), config
 
 , # The `fetchurl' to use for downloading curl and its dependencies
   # (see all-packages.nix).
@@ -9,15 +9,15 @@ let lib = import ../../../lib; in lib.makeOverridable (
 
 , setupScript ? ./setup.sh
 
-, extraBuildInputs ? []
+, extraBuildInputs ? [ ]
 }:
 
 let
 
   allowUnfree = config.allowUnfree or false || builtins.getEnv "NIXPKGS_ALLOW_UNFREE" == "1";
 
-  whitelist = config.whitelistedLicenses or [];
-  blacklist = config.blacklistedLicenses or [];
+  whitelist = config.whitelistedLicenses or [ ];
+  blacklist = config.blacklistedLicenses or [ ];
 
   onlyLicenses = list:
     lib.lists.all (license:
@@ -82,13 +82,13 @@ let
   # Add a utility function to produce derivations that use this
   # stdenv and its shell.
   mkDerivation =
-    { buildInputs ? []
-    , nativeBuildInputs ? []
-    , propagatedBuildInputs ? []
-    , propagatedNativeBuildInputs ? []
+    { buildInputs ? [ ]
+    , nativeBuildInputs ? [ ]
+    , propagatedBuildInputs ? [ ]
+    , propagatedNativeBuildInputs ? [ ]
     , crossConfig ? null
-    , meta ? {}
-    , passthru ? {}
+    , meta ? { }
+    , passthru ? { }
     , pos ? null # position used in error messages and for meta.position
     , ... } @ attrs:
     let
@@ -102,7 +102,7 @@ let
       pos'' = if pos' != null then "‘" + pos'.file + ":" + toString pos'.line + "’" else "«unknown-file»";
 
       throwEvalHelp = unfreeOrBroken: whatIsWrong:
-        assert builtins.elem unfreeOrBroken ["Unfree" "Broken" "blacklisted"];
+        assert builtins.elem unfreeOrBroken [ "Unfree" "Broken" "blacklisted" ];
 
         throw ("Package ‘${attrs.name or "«name-missing»"}’ in ${pos''} ${whatIsWrong}, refusing to evaluate."
         + (lib.strings.optionalString (unfreeOrBroken != "blacklisted") ''
@@ -130,23 +130,23 @@ let
       assert licenseAllowed attrs;
 
       lib.addPassthru (derivation (
-        (removeAttrs attrs ["meta" "passthru" "crossAttrs" "pos"])
+        (removeAttrs attrs [ "meta" "passthru" "crossAttrs" "pos" ])
         //
         {
           builder = attrs.realBuilder or shell;
-          args = attrs.args or ["-e" (attrs.builder or ./default-builder.sh)];
+          args = attrs.args or [ "-e" (attrs.builder or ./default-builder.sh) ];
           stdenv = result;
           system = result.system;
           userHook = config.stdenv.userHook or null;
           __ignoreNulls = true;
 
           # Inputs built by the cross compiler.
-          buildInputs = if crossConfig != null then buildInputs else [];
-          propagatedBuildInputs = if crossConfig != null then propagatedBuildInputs else [];
+          buildInputs = if crossConfig != null then buildInputs else [ ];
+          propagatedBuildInputs = if crossConfig != null then propagatedBuildInputs else [ ];
           # Inputs built by the usual native compiler.
-          nativeBuildInputs = nativeBuildInputs ++ (if crossConfig == null then buildInputs else []);
+          nativeBuildInputs = nativeBuildInputs ++ (if crossConfig == null then buildInputs else [ ]);
           propagatedNativeBuildInputs = propagatedNativeBuildInputs ++
-            (if crossConfig == null then propagatedBuildInputs else []);
+            (if crossConfig == null then propagatedBuildInputs else [ ]);
         })) (
       {
         # The meta attribute is passed in the resulting attribute set,
@@ -157,7 +157,7 @@ let
         # identify the source location of the package.
         meta = meta // (if pos' != null then {
           position = pos'.file + ":" + toString pos'.line;
-        } else {});
+        } else { });
         inherit passthru;
       } //
       # Pass through extra attributes that are not inputs, but
@@ -168,13 +168,13 @@ let
   # The stdenv that we are producing.
   result =
     derivation (
-    (if isNull allowedRequisites then {} else { allowedRequisites = allowedRequisites ++ defaultNativeBuildInputs; }) //
+    (if isNull allowedRequisites then { } else { allowedRequisites = allowedRequisites ++ defaultNativeBuildInputs; }) //
     {
       inherit system name;
 
       builder = shell;
 
-      args = ["-e" ./builder.sh];
+      args = [ "-e" ./builder.sh ];
 
       setup = setupScript;
 
@@ -185,8 +185,15 @@ let
 
       meta.description = "The default build environment for Unix packages in Nixpkgs";
 
-      # Utility flags to test the type of platform.
+      /* Utility flags to test the type of platform. */
+
+      # Kernel test flags
+      isCygwin = system == "i686-cygwin"
+              || system == "x86_64-cygwin";
       isDarwin = system == "x86_64-darwin";
+      isFreeBSD = system == "i686-freebsd"
+               || system == "x86_64-freebsd";
+      isGNU = system == "i686-gnu"; # GNU/Hurd
       isLinux = system == "i686-linux"
              || system == "x86_64-linux"
              || system == "powerpc-linux"
@@ -194,18 +201,19 @@ let
              || system == "armv6l-linux"
              || system == "armv7l-linux"
              || system == "mips64el-linux";
-      isGNU = system == "i686-gnu"; # GNU/Hurd
+      isNetBSD = system == "i686-netbsd"
+              || system == "x86_64-netbsd";
+      isOpenBSD = system == "i686-openbsd"
+               || system == "x86_64-openbsd";
+      isSolaris = isSunOS;
+      isSunOS = system == "i686-solaris"
+             || system == "x86_64-solaris";
+
       isGlibc = isGNU # useful for `stdenvNative'
              || isLinux
              || system == "x86_64-kfreebsd-gnu";
-      isSunOS = system == "i686-solaris"
-             || system == "x86_64-solaris";
-      isCygwin = system == "i686-cygwin"
-              || system == "x86_64-cygwin";
-      isFreeBSD = system == "i686-freebsd"
-               || system == "x86_64-freebsd";
-      isOpenBSD = system == "i686-openbsd"
-               || system == "x86_64-openbsd";
+
+      # Arch test flags
       isi686 = system == "i686-linux"
             || system == "i686-gnu"
             || system == "i686-freebsd"
@@ -216,17 +224,31 @@ let
               || system == "x86_64-freebsd"
               || system == "x86_64-openbsd"
               || system == "x86_64-solaris";
-      is64bit = system == "x86_64-linux"
+      isMips = system == "mips-linux"
+            || system == "mips64el-linux"; # Remove once resolved
+      isMips64 = system == "mips64el-linux";
+      isArm = system == "armv5tel-linux"
+           || system == "armv6l-linux"
+           || system == "armv7l-linux";
+      isArm64 = system == "aarch64-linux";
+
+      # Processor address space
+      is64bit = system == "x86_64-linux" # Currently `is64bit' is used in place of `isx86_64' in some places
              || system == "x86_64-darwin"
              || system == "x86_64-freebsd"
              || system == "x86_64-openbsd"
              || system == "x86_64-solaris";
-      isMips = system == "mips-linux"
-            || system == "mips64el-linux";
-      isArm = system == "armv5tel-linux"
-           || system == "armv6l-linux"
-           || system == "armv7l-linux";
+
+      is32bit = isArm || isi686 || isMips || isPPC;
+      #is64bit = isArm64 || isMips64 || isPPC64 || isx86_64;
+
+      # Endianness test flag
       isBigEndian = system == "powerpc-linux";
+
+      # Arm archs with floating point support
+      isArmFP = system == "armv6l-linux"
+             || system == "armv7l-linux"
+             || isArm64;
 
       # Whether we should run paxctl to pax-mark binaries.
       needsPax = isLinux;
