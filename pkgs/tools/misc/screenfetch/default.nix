@@ -1,38 +1,38 @@
-{ stdenv, fetchgit, xdpyinfo, xprop }:
+{ stdenv, fetchurl, xdpyinfo }:
 
-let
-  version = "3.6.2";
-in
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   name = "screenFetch-${version}";
-  pname = "screenfetch";
+  version = "3.6.5";
 
-  src = fetchgit {
-    url = git://github.com/KittyKatt/screenFetch.git;
-    rev = "dec1cd6c2471defe4459967fbc8ae15b55714338";
-    sha256 = "138a7g0za5dq27jx7x8gqg7gjkgyq0017v0nbcg68ys7dqlxsdl3";
+  src = fetchurl {
+    url = "https://github.com/KittyKatt/screenFetch/archive/v${version}.tar.gz";
+    sha256 = "083gjqs7v98scxxifpacf3b3br13vwyw9p3q8zkaa84ppsa5lq5n";
   };
 
-  installPhase = ''
-    install -Dm 0755 $pname-dev $out/bin/$pname
-    install -Dm 0644 $pname.1 $out/man/man1/$pname.1
+  patchPhase = ''
+    substituteInPlace screenfetch-dev --replace xdpyinfo ${xdpyinfo}/bin/xdpyinfo
   '';
 
-  meta = {
+  installPhase = ''
+    install -Dm 0755 screenfetch-dev $out/bin/screenfetch
+    install -Dm 0644 screenfetch.1 $out/man/man1/screenfetch.1
+  '';
+
+  meta = with stdenv.lib; {
     description = "Fetches system/theme information in terminal for Linux desktop screenshots";
     longDescription = ''
-    screenFetch is a "Bash Screenshot Information Tool". This handy Bash
-    script can be used to generate one of those nifty terminal theme
-    information + ASCII distribution logos you see in everyone's screenshots
-    nowadays. It will auto-detect your distribution and display an ASCII
-    version of that distribution's logo and some valuable information to the
-    right. There are options to specify no ascii art, colors, taking a
-    screenshot upon displaying info, and even customizing the screenshot
-    command! This script is very easy to add to and can easily be extended.
+      screenFetch is a "Bash Screenshot Information Tool". This handy Bash
+      script can be used to generate one of those nifty terminal theme
+      information + ASCII distribution logos you see in everyone's screenshots
+      nowadays. It will auto-detect your distribution and display an ASCII
+      version of that distribution's logo and some valuable information to the
+      right. There are options to specify no ascii art, colors, taking a
+      screenshot upon displaying info, and even customizing the screenshot
+      command! This script is very easy to add to and can easily be extended.
     '';
-    license = stdenv.lib.licenses.gpl3;
-    homepage = http://git.silverirc.com/cgit.cgi/screenfetch-dev.git/;
-    maintainers = with stdenv.lib.maintainers; [relrod];
-    platforms = stdenv.lib.platforms.all;
+    homepage = https://github.com/KittyKatt/screenFetch;
+    license = licenses.gpl3;
+    maintainers = with maintainers; [ relrod ];
+    platforms = platforms.all;
   };
 }
