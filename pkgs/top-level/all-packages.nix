@@ -12408,7 +12408,7 @@ let
   };
 
   vlc = callPackage ../applications/video/vlc {
-    ffmpeg = ffmpeg_2;
+    ffmpeg = ffmpeg_2_6;
   };
 
   vlc_qt5 = vlc.override {

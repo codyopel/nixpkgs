@@ -1,4 +1,5 @@
-{ stdenv, fetchurl, xz, bzip2, perl, xlibs, libdvdnav, libbluray
+{ stdenv, fetchurl, autoreconfHook
+, xz, bzip2, perl, xlibs, libdvdnav, libbluray
 , zlib, a52dec, libmad, faad2, ffmpeg, alsaLib
 , pkgconfig, dbus, fribidi, freefont_ttf, libebml, libmatroska
 , libvorbis, libtheora, speex, lua5, libgcrypt, libupnp
@@ -25,28 +26,32 @@ stdenv.mkDerivation rec {
     sha256 = "05smn9hqdp7iscc1dj4cxp1mrlad7b50lhlnlqisfzf493i2f2jy";
   };
 
-  buildInputs =
-    [ xz bzip2 perl zlib a52dec libmad faad2 ffmpeg alsaLib libdvdnav libdvdnav.libdvdread
-      libbluray dbus fribidi libvorbis libtheora speex lua5 libgcrypt
-      libupnp libcaca pulseaudio flac schroedinger libxml2 librsvg mpeg2dec
-      udev gnutls avahi libcddb jack2 SDL SDL_image libmtp unzip taglib
-      libkate libtiger libv4l samba liboggz libass libdvbpsi libva
-      xlibs.xlibs xlibs.libXv xlibs.libXvMC xlibs.libXpm xlibs.xcbutilkeysyms
-      libdc1394 libraw1394 libopus libebml libmatroska libvdpau
-    ] ++ (if withQt5 then with qt5; [ base ] else [qt4]);
+  patchPhase = ''
+    rm ./configure
+  '';
 
-  nativeBuildInputs = [ pkgconfig ];
+  buildInputs = [
+    xz bzip2 perl zlib a52dec libmad faad2 ffmpeg alsaLib libdvdnav libdvdnav.libdvdread
+    libbluray dbus fribidi libvorbis libtheora speex lua5 libgcrypt
+    libupnp libcaca pulseaudio flac schroedinger libxml2 librsvg mpeg2dec
+    udev gnutls avahi libcddb jack2 SDL SDL_image libmtp unzip taglib
+    libkate libtiger libv4l samba liboggz libass libdvbpsi libva
+    xlibs.xlibs xlibs.libXv xlibs.libXvMC xlibs.libXpm xlibs.xcbutilkeysyms
+    libdc1394 libraw1394 libopus libebml libmatroska libvdpau
+  ] ++ (if withQt5 then with qt5; [ base ] else [qt4]);
 
-  configureFlags =
-    [ "--enable-alsa"
-      "--with-kde-solid=$out/share/apps/solid/actions"
-      "--enable-dc1394"
-      "--enable-ncurses"
-      "--enable-vdpau"
-    ]
-    ++ optional onlyLibVLC  "--disable-vlc";
+  nativeBuildInputs = [ autoreconfHook pkgconfig ];
 
-  preConfigure = ''sed -e "s@/bin/echo@echo@g" -i configure'';
+  configureFlags = [
+    "--enable-alsa"
+    "--with-kde-solid=$out/share/apps/solid/actions"
+    "--enable-dc1394"
+    "--enable-ncurses"
+    "--enable-vdpau"
+    "--enable-avcodec"
+  ] ++ optional onlyLibVLC  "--disable-vlc";
+
+  #preConfigure = ''sed -e "s@/bin/echo@echo@g" -i configure'';
 
   enableParallelBuilding = true;
 
