@@ -1,62 +1,55 @@
-# Handbrake normally uses its own copies of the libraries it uses, for better
-# control over library patches.
-#
-# This derivation patches HB so it doesn't do that. The relevant patches
-# are added to the Nix packages and proposed upstream instead. In several cases
-# upstream already incorporated these patches.
+
+{ stdenv, config, fetchurl, autoconf, automake, libtool, m4, python, pkgconfig, yasm
+, a52dec, bzip2, faac, fdk_aac, ffmpeg, fontconfig, freetype, fribidi, lame
+, libass, libbluray, libdvdcss, libdvdnav, libdvdread, libmkv, libogg
+, libsamplerate, libtheora, libvorbis, libvpx, libxml2, mp4v2, mpeg2dec, x264, x265
+, useGtk ? true, dbus_glib ? null, glib ? null, gtk ? null, gst_all_1 ? null
+  , intltool ? null, libnotify ? null, udev ? null
+# This prevents ghb from starting in my tests
+, useWebKitGtk ? false, webkitgtk ? null
+}:
+
+# Handbrake normally vendors copies of libraries it uses, for better control
+# over library patches.  This derivation patches HB so it doesn't do that. The
+# relevant patches are added to Nix packages and proposed upstream instead.
+# In several cases upstream already incorporated these patches.
 # This has the benefits of providing improvements to other packages,
 # making licenses more clear and reducing compile time/install size.
 #
 # For compliance, the unfree codec faac is optionally spliced out.
-#
-# Only tested on Linux
-#
-# TODO: package and use libappindicator
 
-{ stdenv, config, fetchurl,
-  python, pkgconfig, yasm,
-  autoconf, automake, libtool, m4,
-  libass, libsamplerate, fribidi, libxml2, bzip2,
-  libogg, libtheora, libvorbis, libdvdcss, a52dec, fdk_aac,
-  lame, faac, ffmpeg, libdvdread, libdvdnav, libbluray,
-  mp4v2, mpeg2dec, x264, libmkv,
-  fontconfig, freetype,
-  glib, gtk, webkitgtk, intltool, libnotify,
-  gst_all_1, dbus_glib, udev,
-  useGtk ? true,
-  useWebKitGtk ? false # This prevents ghb from starting in my tests
-}:
+let
+  inherit (stdenv.lib) enableFeature optional optionals;
+  allowUnfree = config.allowUnfree or false;
+in
 
 stdenv.mkDerivation rec {
-  version = "0.9.9";
   name = "handbrake-${version}";
-
-  # ToDo: doesn't work (yet)
-  allowUnfree = false; # config.allowUnfree or false;
-
-  buildInputsX = stdenv.lib.optionals useGtk [
-    glib gtk intltool libnotify
-    gst_all_1.gstreamer gst_all_1.gst-plugins-base dbus_glib udev
-  ] ++ stdenv.lib.optionals useWebKitGtk [ webkitgtk ];
-
-  # Did not test compiling with it
-  unfreeInputs = stdenv.lib.optional allowUnfree faac;
-
-  nativeBuildInputs = [ python pkgconfig yasm autoconf automake libtool m4 ];
-  buildInputs = [
-    fribidi fontconfig freetype
-    libass libsamplerate libxml2 bzip2
-    libogg libtheora libvorbis libdvdcss a52dec libmkv fdk_aac
-    lame ffmpeg libdvdread libdvdnav libbluray mp4v2 mpeg2dec x264
-  ] ++ buildInputsX ++ unfreeInputs;
-
+  version = "0.10.1";
 
   src = fetchurl {
     url = "http://download.handbrake.fr/releases/${version}/HandBrake-${version}.tar.bz2";
-    sha256 = "1crmm1c32vx60jfl2bqzg59q4qqx6m83b08snp7h1njc21sdf7d7";
+    sha256 = "1x93i8snngx9s67z0yvg7ga0ziajr5wsx6isj02gspjdzlqj193y";
   };
 
-  patches = stdenv.lib.optional (! allowUnfree) ./disable-unfree.patch;
+  patches = optional (!allowUnfree) ./disable-unfree.patch;
+
+  configureFlags = [
+    "--prefix=$(out)"
+    "--force"
+    "--verbose"
+    #"--enable-asm"
+    "--disable-gtk-update-checks"
+    (if useGtk then "" else "--disable-gtk")
+    #"--enable-qsv"
+    #"--enable-hwd"
+    "--enable-x265"
+    "--enable-fdk-aac"
+    #"--enable-local-yasm"
+    #"--enable-local-autotools"
+    #"--enable-local-cmake"
+    #"--enable-local-pkgconfig"
+  ];
 
   preConfigure = ''
     # Fake wget to prevent downloads
@@ -68,32 +61,47 @@ stdenv.mkDerivation rec {
     export PATH=$PATH:$PWD/wget
 
     # Force using nixpkgs dependencies
-    sed -i '/MODULES += contrib/d' make/include/main.defs
-    sed -i '/PKG_CONFIG_PATH=/d' gtk/module.rules
+    sed -i 's:.*\(/contrib\|contrib/\).*::g' make/include/main.defs
+    #sed -i '/MODULES += contrib/d' make/include/main.defs
+    #sed -i '/PKG_CONFIG_PATH=/d' gtk/module.rules
 
     # disable faac if non-free
     if [ -z "$allowUnfree" ]; then
-      rm libhb/encfaac.c
+      rm -f libhb/encfaac.c
     fi
   '';
 
-  configureFlags = "--enable-fdk-aac ${if useGtk then "--disable-gtk-update-checks" else "--disable-gtk"}";
+  buildInputsX = optionals useGtk [
+    glib gtk intltool libnotify
+    gst_all_1.gstreamer gst_all_1.gst-plugins-base dbus_glib udev
+  ] ++ optional useWebKitGtk webkitgtk;
+
+  # Did not test compiling with it
+  unfreeInputs = optional allowUnfree faac;
+
+  nativeBuildInputs = [ autoconf automake libtool m4 pkgconfig python yasm ];
+
+  buildInputs = [
+    fribidi fontconfig freetype
+    libass libsamplerate libxml2 bzip2
+    libogg libtheora libvorbis libdvdcss a52dec libmkv fdk_aac
+    lame ffmpeg libdvdread libdvdnav libbluray mp4v2 mpeg2dec x264 x265
+  ] ++ buildInputsX ++ unfreeInputs;
 
   preBuild = ''
     cd build
   '';
 
-  meta = {
-    homepage = http://handbrake.fr/;
-    description = "A tool for ripping DVDs into video files";
+  meta = with stdenv.lib; {
+    description = "A tool for ripping and transcoding video";
     longDescription = ''
       Handbrake is a versatile transcoding DVD ripper. This package
       provides the cli HandbrakeCLI and the GTK+ version ghb.
       The faac library is disabled if you're compiling free-only.
     '';
-    license = stdenv.lib.licenses.gpl2;
-    maintainers = [ stdenv.lib.maintainers.wmertens ];
-    # Not tested on anything else
-    platforms = stdenv.lib.platforms.linux;
+    homepage = http://handbrake.fr/;
+    license = licenses.gpl2;
+    maintainers = with maintainers; [ wmertens ];
+    platforms = platforms.linux;
   };
 }
