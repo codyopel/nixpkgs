@@ -1,15 +1,19 @@
-{stdenv, fetchurl, mono, gtksharp, pkgconfig}:
+{ stdenv, fetchurl, intltool, pkgconfig
+, mono, gtksharp
+}:
 
-stdenv.mkDerivation {
-  name = "pinta-1.4";
+stdenv.mkDerivation rec {
+  name = "pinta-${version}";
+  version = "1.6";
 
   src = fetchurl {
-    url = "https://github.com/PintaProject/Pinta/tarball/3f7ccfa93d";
-    name = "pinta-1.4.tar.gz";
-    sha256 = "1kgb4gy5l6bd0akniwhiqqkvqayr5jgdsvn2pgg1038q9raafnpn";
+    url = "https://github.com/PintaProject/Pinta/releases/download/${version}/${name}.tar.gz";
+    sha256 = "10fqk7mi1bls2zn3da35l5a65lkvnzgj5xmnv34946q5y6arxspi";
   };
 
-  buildInputs = [mono gtksharp pkgconfig];
+  nativeBuildInputs = [ intltool pkgconfig ];
+
+  buildInputs = [ mono gtksharp ];
 
   buildPhase = ''
     # xbuild understands pkgconfig, but gtksharp does not give .pc for gdk-sharp
@@ -34,11 +38,11 @@ stdenv.mkDerivation {
   # Always needed on Mono, otherwise nothing runs
   dontStrip = true; 
 
-  meta = {
-    homepage = http://www.pinta-project.com/;
+  meta = with stdenv.lib; {
     description = "Drawing/editing program modeled after Paint.NET";
-    license = stdenv.lib.licenses.mit;
-    maintainers = with stdenv.lib.maintainers; [viric];
-    platforms = with stdenv.lib.platforms; linux;
+    homepage = http://www.pinta-project.com/;
+    license = licenses.mit;
+    maintainers = with maintainers; [ viric ];
+    platforms = platforms.linux;
   };
 }
