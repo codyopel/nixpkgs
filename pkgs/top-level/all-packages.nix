@@ -5785,6 +5785,8 @@ let
 
   eigen2 = callPackage ../development/libraries/eigen/2.0.nix {};
 
+  electron = callPackage ../development/libraries/electron { };
+
   enchant = callPackage ../development/libraries/enchant { };
 
   enet = callPackage ../development/libraries/enet { };
