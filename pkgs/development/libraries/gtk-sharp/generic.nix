@@ -1,6 +1,6 @@
 { stdenv, fetchurl, autoreconfHook, pkgconfig
 # Autogen
-, autoconf, automake, libtool
+, autoconf, automake, libtool, which
 , atk
 , glib
 , gtk2
@@ -23,7 +23,7 @@
 }:
 
 let
-  inherit (stdenv.lib) optional optionalString versionOlder;
+  inherit (stdenv.lib) optional optionalString versionAtLeast versionOlder;
 in
 
 stdenv.mkDerivation rec {
@@ -35,15 +35,10 @@ stdenv.mkDerivation rec {
     inherit sha256;
   };
 
-  builder = ./builder.sh;
-
   # patch bad usage of glib, which wasn't tolerated anymore
-  patchPhase = ''
-    sed -e 's,#include <glib/.*\.h>,#include <glib.h>,g' -i ./glib/glue/thread.c
-    #sed -e 's,#include <glib/.*\.h>,#include <glib.h>,g' -i ./glib/glue/list.c
-    #sed -e 's,#include <glib/.*\.h>,#include <glib.h>,g' -i ./glib/glue/slist.c
-  '' + optionalString (versionOlder version "2.99.0") ''
-  # Emulate the functionality of `bootstrap-2.12' (aka. autogen.sh)
+  patchPhase = optionalString (versionOlder version "2.99.0") ''
+    # Emulate the functionality of `bootstrap-2.12' (aka. autogen.sh)
+
     # Fix miss named configure script
     mv configure.in.in configure.ac
 
@@ -54,7 +49,6 @@ stdenv.mkDerivation rec {
     export VERSIONCSDEFINES="-define:GTK_SHARP_2_6 -define:GTK_SHARP_2_8 -define:GTK_SHARP_2_10 -define:GTK_SHARP_2_12"
     export VERSIONCFLAGS="-DGTK_SHARP_2_6 -DGTK_SHARP_2_8 -DGTK_SHARP_2_10 -DGTK_SHARP_2_12"
     export GTK_API_TAG="2.12"
-
 
     sed -e "s/@GTK_SHARP_VERSION@/$GTK_SHARP_VERSION/" -i configure.ac
     sed -e "s/@GTK_REQUIRED_VERSION@/$GTK_REQUIRED_VERSION/" -i configure.ac
@@ -68,29 +62,30 @@ stdenv.mkDerivation rec {
     ln -f ./gdk/gdk-api-$GTK_API_TAG.raw ./gdk/gdk-api.raw
     ln -f ./gtk/gtk-api-$GTK_API_TAG.raw ./gtk/gtk-api.raw
     ln -f ./glade/glade-api-$GTK_API_TAG.raw ./glade/glade-api.raw
-    
+  '' + optionalString (versionAtLeast version "2.99.0") ''
+    #./autogen.sh
+  ''+ ''    
     libtoolize --force --copy
-    aclocal
+    aclocal $ACLOCAL_FLAGS
     autoheader
     automake --add-missing --foreign
     autoconf
-  '';
-
-  preConfigure = optionalString (versionOlder version "2.99.0") ''
   '';
 
   configureFlags = [
     "--disable-maintainer-mode"
   ];
 
+  builder = ./builder.sh;
+
   nativeBuildInputs = [ autoconf automake libtool pkgconfig ];
 
   buildInputs = [
-    atk glib gtk2 libglade libxml2 mono pango
+    atk glib libglade libxml2 mono pango
     #GConf libgnomecanvas
     #libgtkhtml libgnomeui libgnomeprint libgnomeprintui gtkhtml
     #gnomepanel
-  ];
+  ] ++ (if versionOlder version "2.99.0" then [ gtk2 ] else [ gtk3 ]);
 
   dontStrip = true;
 
