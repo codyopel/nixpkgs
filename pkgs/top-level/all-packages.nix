@@ -12534,9 +12534,7 @@ let
     inherit (xlibs) libX11;
   };
 
-  vlc = callPackage ../applications/video/vlc {
-    ffmpeg = ffmpeg_2;
-  };
+  vlc = callPackage ../applications/video/vlc { };
 
   vlc_qt5 = vlc.override {
     qt4 = null;

@@ -1,20 +1,21 @@
-{ stdenv, fetchurl, xz, bzip2, perl, xlibs, libdvdnav, libbluray
-, zlib, a52dec, libmad, faad2, ffmpeg, alsaLib
-, pkgconfig, dbus, fribidi, freefont_ttf, libebml, libmatroska
-, libvorbis, libtheora, speex, lua5, libgcrypt, libupnp
-, libcaca, pulseaudio, flac, schroedinger, libxml2, librsvg
-, mpeg2dec, udev, gnutls, avahi, libcddb, jack2, SDL, SDL_image
-, libmtp, unzip, taglib, libkate, libtiger, libv4l, samba, liboggz
-, libass, libva, libdvbpsi, libdc1394, libraw1394, libopus
-, libvdpau
+{ stdenv, fetchurl, perl, pkgconfig
+, a52dec, alsaLib, avahi, bzip2, dbus, faad2, ffmpeg, flac, freefont_ttf
+, fribidi, gnutls, jack2, libass, libbluray, libcaca, libcddb, libdc1394
+, libdvbpsi, libdvdnav, libebml, libgcrypt, libkate, libmad, libmatroska
+, libmodplug, libmtp, liboggz, libopus, libvpx, libraw1394, librsvg, libtheora
+, libtiger, libupnp, libv4l, libva, libvdpau, libvorbis, libxml2, lua5
+, mpeg2dec, pulseaudio, samba, schroedinger, SDL, SDL_image, speex, taglib
+, udev, unzip, xlibs, xz, zlib
+, withQt5 ? false, qt4 ? null, qt5 ? null
 , onlyLibVLC ? false
-, qt4 ? null, qt5 ? null, withQt5 ? false
 }:
 
-with stdenv.lib;
+let
+  inherit (stdenv.lib) enableFeature;
+in
 
-assert (withQt5 -> qt5 != null);
-assert (!withQt5 -> qt4 != null);
+assert withQt5 -> qt5 != null;
+assert !withQt5 -> qt4 != null;
 
 stdenv.mkDerivation rec {
   name = "vlc-${version}";
@@ -25,37 +26,105 @@ stdenv.mkDerivation rec {
     sha256 = "1jqzrzrpw6932lbkf863xk8cfmn4z2ngbxz7w8ggmh4f6xz9sgal";
   };
 
-  buildInputs =
-    [ xz bzip2 perl zlib a52dec libmad faad2 ffmpeg alsaLib libdvdnav libdvdnav.libdvdread
-      libbluray dbus fribidi libvorbis libtheora speex lua5 libgcrypt
-      libupnp libcaca pulseaudio flac schroedinger libxml2 librsvg mpeg2dec
-      udev gnutls avahi libcddb jack2 SDL SDL_image libmtp unzip taglib
-      libkate libtiger libv4l samba liboggz libass libdvbpsi libva
-      xlibs.xlibs xlibs.libXv xlibs.libXvMC xlibs.libXpm xlibs.xcbutilkeysyms
-      libdc1394 libraw1394 libopus libebml libmatroska libvdpau
-    ] ++ (if withQt5 then with qt5; [ base ] else [qt4]);
-
-  nativeBuildInputs = [ pkgconfig ];
-
-  configureFlags =
-    [ "--enable-alsa"
-      "--with-kde-solid=$out/share/apps/solid/actions"
-      "--enable-dc1394"
-      "--enable-ncurses"
-      "--enable-vdpau"
-      "--enable-dvdnav"
-    ]
-    ++ optional onlyLibVLC  "--disable-vlc";
-
-  preConfigure = ''sed -e "s@/bin/echo@echo@g" -i configure'';
-
-  enableParallelBuilding = true;
-
-  preBuild = ''
+  patchPhase = ''
+    patchShebangs ./configure
     substituteInPlace modules/text_renderer/freetype.c --replace \
       /usr/share/fonts/truetype/freefont/FreeSerifBold.ttf \
       ${freefont_ttf}/share/fonts/truetype/FreeSerifBold.ttf
   '';
+
+  nativeBuildInputs = [ perl pkgconfig ];
+
+  buildInputs = [
+    a52dec alsaLib avahi bzip2 dbus faad2 ffmpeg flac freefont_ttf fribidi
+    gnutls jack2 libass libbluray libcaca libcddb libdc1394 libdvbpsi libdvdnav
+    libdvdnav.libdvdread libebml libgcrypt libkate libmad libmatroska libmodplug
+    libmtp liboggz libopus libraw1394 librsvg libtheora libtiger libupnp libv4l
+    libva libvdpau libvorbis libvpx libxml2 lua5 mpeg2dec pulseaudio samba
+    schroedinger SDL SDL_image speex taglib udev unzip xlibs.libXpm
+    xlibs.xcbutilkeysyms xlibs.libXv xlibs.libXvMC xlibs.xlibs xz zlib
+  ] ++ (if withQt5 then [ qt5.base ] else [ qt4 ]);
+
+  configureFlags = [
+    "--enable-a52"
+    #"--enable-aa"
+    "--enable-addonmanagermodules"
+    "--enable-alsa"
+    #"--enable-aribsub"
+    "--enable-avcodec"
+    "--enable-avformat"
+    #"--enable-bpg"
+    #"--enable-crystalhd" Requires broadcom crystalhd
+    "--enable-dbus"
+    "--enable-dc1394"
+    #"--enable-decklink" Requires blackmagic-design-video
+    "--enable-dvdnav"
+    #"--enable-faad"
+    #"--enable-directfb"
+    "--enable-fontconfig"
+    "--enable-freetype"
+    "--enable-fribidi"
+    #"--enable-gme" game music emulator
+    "--enable-gnutls"
+    #"--enable-growl"
+    "--enable-gst-decode"
+    "--enable-harfbuzz"
+    "--enable-httpd"
+    "--enable-jack"
+    "--enable-jpeg"
+    "--enable-libass"
+    "--enable-libcddb"
+    "--enable-libgcrypt"
+    "--enable-libtar"
+    "--enable-libva"
+    #"--enable-libx262"
+    #"--enable-linsys" Linux Linear Systems Ltd. SDI and HD-SDI input cards
+    #"--enable-lirc"
+    #"--enable-live555" Requires live555
+    "--enable-lua"
+    "--enable-mad"
+    "--enable-merge-ffmpeg"
+    "--enable-mkv"
+    "--enable-mod"
+    "--enable-mpc"
+    "--enable-ncurses"
+    #"--enable-omxil"
+    #"--enable-omxil-vout"
+    "--disable-oss" # OSS not supported by Nix
+    "--enable-postproc"
+    "--enable-png"
+    #"--enable-projectm"
+    "--enable-pulse"
+    (enableFeature (!onlyLibVLC) "qt")
+    #"--enable-quicktime"
+    #"--enable-realrtsp"
+    #"--enable-screen" ???
+    "--enable-sdl"
+    "--enable-skins2"
+    "--enable-sout"
+    "--enable-swscale"
+    "--enable-taglib"
+    "--enable-telx"
+    #"--enable-tiger"
+    #"--enable-tremor"
+    "--disable-update-check"
+    "--enable-vdpau"
+    "--enable-v4l2"
+    "--enable-vcd"
+    (enableFeature (!onlyLibVLC) "vlc")
+    "--enable-vlm"
+    "--enable-vpx"
+    #"--enable-wayland"
+    #"--enable-wma-fixed"
+    #"--enable-x264"
+    #"--enable-x26410b"
+    "--enable-xcb"
+    "--enable-xvideo"
+    "--enable-zvbi"
+    "--with-kde-solid=$out/share/apps/solid/actions"
+  ];
+
+  enableParallelBuilding = true;
 
   meta = with stdenv.lib; {
     description = "Cross-platform media player and streaming server";
