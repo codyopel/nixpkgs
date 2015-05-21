@@ -6218,7 +6218,13 @@ let
     gtksharp = gtk-sharp;
   };
 
-  gtk-sharp = callPackage ../development/libraries/gtk-sharp-2 {
+  gtk-sharp2 = callPackage ../development/libraries/gtk-sharp/2.nix {
+    inherit (gnome) libglade libgtkhtml gtkhtml
+              libgnomecanvas libgnomeui libgnomeprint
+              libgnomeprintui GConf gnomepanel;
+  };
+
+  gtk-sharp3 = callPackage ../development/libraries/gtk-sharp/3.nix {
     inherit (gnome) libglade libgtkhtml gtkhtml
               libgnomecanvas libgnomeui libgnomeprint
               libgnomeprintui GConf gnomepanel;
