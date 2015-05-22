@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, cmake, pkgconfig, gtk3, perl, vte }:
+{ stdenv, fetchurl, cmake, pkgconfig, epoxy, gtk3, libxkbcommon, perl, gnome3, xlibs }:
 
 stdenv.mkDerivation rec {
   name = "sakura-${version}";
@@ -11,7 +11,7 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [ cmake perl pkgconfig ];
 
-  buildInputs = [ gtk3 vte ];
+  buildInputs = [ epoxy gtk3 libxkbcommon gnome3.vte_290 xlibs.libpthreadstubs xlibs.libXdmcp xlibs.libxshmfence ];
 
   meta = with stdenv.lib; {
     description = "A terminal emulator based on GTK and VTE";
