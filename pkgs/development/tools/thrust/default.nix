@@ -1,47 +1,69 @@
-{ stdenv, fetchurl, buildEnv, makeWrapper, glib, alsaLib , dbus, gtk, atk
+{ stdenv, fetchgit, ninja, pkgconfig, python
+, alsaLib, atk, dbus, glib, gtk2, libnotify
 , pango, freetype, fontconfig, gdk_pixbuf , cairo, cups, expat, nspr, gconf, nss
-, xlibs, libcap, unzip
+, xlibs, libcap, unzip, pythonPackages
 }:
 
 let
-  thrustEnv = buildEnv {
-    name = "env-thrust";
-    paths = [
-      stdenv.cc.cc glib dbus gtk atk pango freetype fontconfig gdk_pixbuf
-      cairo cups expat alsaLib nspr gconf nss xlibs.libXrender xlibs.libX11
-      xlibs.libXext xlibs.libXdamage xlibs.libXtst xlibs.libXcomposite
-      xlibs.libXi xlibs.libXfixes xlibs.libXrandr xlibs.libXcursor libcap
-    ];
-  };
-in stdenv.mkDerivation rec {
+  inherit (stdenv) isArm isi686 isx86_64 system;
+  arch = (
+    if isi686 then "ia32"
+    else if isx86_64 then "x64"
+    else if isArm then "arm"
+    #else if isArm64 then "arm64"
+    #else if isMips then "mipsel" # isMips currently mixes both 32 & 64bit mips
+    #else if isMips64 then "mips64el"
+    #else if isPPC64 then "ppc64" # Nix does not support PPC
+    else throw "Thrust does not support the `${system}' platform"
+  );
+in
+
+stdenv.mkDerivation rec {
   name = "thrust-${version}";
   version = "0.7.6";
 
-  src = fetchurl {
-    url = "https://github.com/breach/thrust/releases/download/v${version}/thrust-v${version}-linux-x64.zip";
-    sha256 = "07rrnlj0gk500pvar4b1wdqm05p4n9yjwn911x93bd2qwc8r5ymc";
+  src = fetchgit {
+    url = "https://github.com/breach/thrust.git";
+    rev = "7c17e16437ad9beea99f4cd68831eba9274a4606";
+    sha256 = "1754l6rnckbshqx9zkh69w4ff8dn3skv8kii43fzzliz5xdsvska";
+    fetchSubmodules = true;
   };
 
-  buildInputs = [ thrustEnv makeWrapper unzip ];
+  patchPhase = ''
+    sed -e '/download\//d' -i ./vendor/brightray/brightray.gypi
+  '';
 
-  phases = [ "installPhase" "fixupPhase" ];
+  configurePhase = ''
+  #ls vendor/brightray/vendor/
+  #return 1
+    ${pythonPackages.gyp}/bin/gyp \
+      -f ninja \
+      --depth . \
+      thrust_shell.gyp \
+      -Icommon.gypi \
+      -Ivendor/brightray/brightray.gypi \
+      -Dtarget_arch=${arch}
+  '';
 
-  installPhase = ''
-    mkdir -p $out/bin
-    mkdir -p $out/libexec/thrust
-    unzip -d $out/libexec/thrust/ $src
-    patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
-      $out/libexec/thrust/thrust_shell
-    wrapProgram $out/libexec/thrust/thrust_shell \
-      --prefix "LD_LIBRARY_PATH" : "${thrustEnv}/lib:${thrustEnv}/lib64"
-    ln -s $out/libexec/thrust/thrust_shell $out/bin
+  nativeBuildInputs = [ ninja pkgconfig python ];
+
+  buildInputs = [
+    alsaLib atk dbus glib gtk2 libnotify
+    pango freetype fontconfig gdk_pixbuf
+    cairo cups expat alsaLib nspr gconf nss xlibs.libXrender xlibs.libX11
+    xlibs.libXext xlibs.libXdamage xlibs.libXtst xlibs.libXcomposite
+    xlibs.libXi xlibs.libXfixes xlibs.libXrandr xlibs.libXcursor libcap
+  ];
+
+  buildPhase = ''
+    ${ninja}/bin/ninja -C out/Release -j$NIX_BUILD_CORES -l$NIX_BUILD_CORES thrust_shell
   '';
 
   meta = with stdenv.lib; {
     description = "Chromium-based cross-platform / cross-language application framework";
     homepage = https://github.com/breach/thrust;
-    license = [ licenses.mit ];
-    maintainers = [ maintainers.osener ];
-    platforms = [ "x86_64-linux" ];
+    license = licenses.mit;
+    maintainers = with maintainers; [ osener ];
+    platforms = platforms.all;
   };
 }
