@@ -1,7 +1,7 @@
-{ stdenv, fetchgit, ninja, pkgconfig, python
+{ stdenv, fetchgit, fetchurl, ninja, pkgconfig, python
 , alsaLib, atk, dbus, glib, gtk2, libnotify
 , pango, freetype, fontconfig, gdk_pixbuf , cairo, cups, expat, nspr, gconf, nss
-, xlibs, libcap, unzip, pythonPackages
+, xlibs, libcap, unzip, pythonPackages, srcOnly
 }:
 
 let
@@ -16,6 +16,24 @@ let
     #else if isPPC64 then "ppc64" # Nix does not support PPC
     else throw "Thrust does not support the `${system}' platform"
   );
+
+  libchromiumcontent_filenames = srcOnly {
+    name = "libchromiumcontent_filenames-2015-06-10";
+
+    src = fetchurl {
+      url = "https://github.com/atom/libchromiumcontent/blob/d5c126e2d8fd181a94720c64b18196505b937041/tools/generate_filenames_gypi.py";
+      sha256 = "1v7cx06988l0xy0da6hwws0skkc2r3fnm78wz0lv4c38q5k2pnqy";
+    };
+
+    patchPhase = ''
+      patchShebangs ./generate_filenames_gypi.py
+    '';
+
+    installPhase = ''
+      mkdir -p $out/bin
+      cp -p generate_filenames_gypi.py $out/bin
+    '';
+  };
 in
 
 stdenv.mkDerivation rec {
@@ -31,6 +49,12 @@ stdenv.mkDerivation rec {
 
   patchPhase = ''
     sed -e '/download\//d' -i ./vendor/brightray/brightray.gypi
+
+    #ls vendor/brightray/vendor/libchromiumcontent/tools
+    #return 1
+    #patchShebangs ./vendor/brightray/vendor/libchromiumcontent/tools/generate_filenames_gypi.py
+    #./vendor/brightray/vendor/libchromiumcontent/tools/generate_filenames_gypi.py
+    ${libchromiumcontent_filenames}/bin/
   '';
 
   configurePhase = ''
@@ -42,6 +66,7 @@ stdenv.mkDerivation rec {
       thrust_shell.gyp \
       -Icommon.gypi \
       -Ivendor/brightray/brightray.gypi \
+      -Ivendor/brightray/vendor/libchromiumcontent/chromiumcontent/chromiumcontent.gyp
       -Dtarget_arch=${arch}
   '';
 

@@ -6485,6 +6485,8 @@ let
 
   libchop = callPackage ../development/libraries/libchop { };
 
+  libchromiumcontent = callPackage ../development/libraries/libchromiumcontent { };
+
   libclc = callPackage ../development/libraries/libclc { };
 
   libcli = callPackage ../development/libraries/libcli { };
