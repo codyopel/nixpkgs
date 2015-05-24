@@ -1,12 +1,12 @@
-{ stdenv, callPackage, fetchurl, pkgconfig
-, bison, glib, gettext, perl, libgdiplus, libX11, ncurses, zlib
+{ stdenv, callPackage, fetchurl, coreutils, pkgconfig
+, bison, glib, gettext, perl, python, libgdiplus, libX11, ncurses, zlib
 , withLLVM ? false # Enable mono-llvm JIT compiler for supported methods
 }:
 
 let
-  inherit (stdenv.lib) optionals optionalString;
-
+  inherit (stdenv.lib) enableFeature optional optionals optionalString;
   mono-llvm = callPackage ./mono-llvm.nix { };
+  outDir = "$out";
 in
 
 stdenv.mkDerivation rec {
@@ -18,11 +18,24 @@ stdenv.mkDerivation rec {
     sha256 = "03rfn2dm3x787wy7fjpvv3rrbql2h7as71hr01vj10lw53f23kkf";
   };
 
-  nativeBuildInputs = [ pkgconfig ];
+  patchPhase = ''
+    patchShebangs .
 
-  buildInputs = [ bison glib gettext perl libgdiplus libX11 ncurses zlib ];
-
-  propagatedBuildInputs = [ glib ];
+    # Fix pkgconfig files (not seting variables during build)
+    ls
+    for file in data/* ; do
+      if [ -f "$1" ] ; then
+        sed -e 's,''\${prefix},${outDir},' -i $file
+        sed -e 's,''\${pcfiledir},${outDir},' -i $file
+        sed -e 's,''\${assemblies_dir},${outDir}/lib/mono,' -i $file
+        sed -e 's,''\${libdir},${outDir}/lib,' -i $file
+      fi
+    done
+  '' + optionalString withLLVM ''
+    # Fix mono-llvm reference
+    substituteInPlace mono/mini/aot-compiler.c \
+      --replace "llvm_path = g_strdup (\"\")" "llvm_path = g_strdup (\"${mono-llvm}/bin/\")"
+  '';
 
   NIX_LDFLAGS = "-lgcc_s";
 
@@ -32,26 +45,31 @@ stdenv.mkDerivation rec {
     #"--with-shared_mono=yes"
     #"--enable-libraries"
     #"--enable-executables"
+    "--with-jit"
+    "--with-crosspkgdir=$(out)/lib/pkgconfig"
+    "--enable-nls"
     "--x-includes=${libX11}/include"
     "--x-libraries=${libX11}/lib"
     "--with-libgdiplus=${libgdiplus}/lib/libgdiplus.so"
+    (enableFeature withLLVM "llvm")
+    (enableFeature withLLVM "llvmloaded")
   ] ++ optionals withLLVM [
-    "--enable-llvm"
-    "--enable-llvmloaded"
     "--with-llvm=${mono-llvm}"
   ];
 
-  # Patch all the necessary scripts. Also, if we're using LLVM, we fix the default
-  # LLVM path to point into the Mono LLVM build, since it's private anyway.
-  preBuild = ''
-    makeFlagsArray=(INSTALL=`type -tp install`)
-    patchShebangs ./
-  '' + optionalString withLLVM ''
-    substituteInPlace mono/mini/aot-compiler.c --replace "llvm_path = g_strdup (\"\")" "llvm_path = g_strdup (\"${mono-llvm}/bin/\")"
-  '';
+  makeFlags = [
+    "INSTALL=${coreutils}/bin/install"
+  ];
+
+  nativeBuildInputs = [ pkgconfig ];
+
+  buildInputs = [ bison gettext perl python libgdiplus libX11 ncurses zlib ]
+    ++ optional withLLVM mono-llvm;
+
+  propagatedBuildInputs = [ glib ];
 
   # Fix mono DLLMap so it can find libX11 and gdiplus to run winforms apps
-  # Other items in the DLLMap may need to be pointed to their store locations, I don't think this is exhaustive
+  # Other items in the DLLMap may need to be pointed to their store locations
   # http://www.mono-project.com/Config_DllMap
   postBuild = ''
     find . -name 'config' -type f | while read i; do
@@ -67,10 +85,10 @@ stdenv.mkDerivation rec {
   enableParallelBuilding = false;
 
   meta = with stdenv.lib; {
-    homepage = http://mono-project.com/;
     description = "Cross platform, open source .NET development framework";
-    license = licenses.free; # Combination of LGPL/X11/GPL ?
-    maintainers = with maintainers; [ obadz thoughtpolice viric ];
+    homepage = http://mono-project.com/;
+    license = licenses.gpl1; # Combination of LGPL1/X11/GPL1/MPL
+    maintainers = with maintainers; [ codyopel obadz thoughtpolice viric ];
     platforms = platforms.linux;
   };
 }

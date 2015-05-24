@@ -26,15 +26,10 @@ stdenv.mkDerivation rec {
     sha256 = "1fldqs2865r6k03hr83z2yi7zrg7ynsz4wf009kfg98wvs9kic4p";
   };
 
-  #unpackPhase = ''
-  #  unpackFile ${src}
-  #  mv llvm-* llvm
-  #  sourceRoot=$PWD/llvm
-  #'';
-
   #patches = [ ./build-fix-llvm.patch ];
 
   patchPhase = ''
+    # Make sure Cmake is used instead of the shell configure script
     rm -f ./configure
   '';
 
