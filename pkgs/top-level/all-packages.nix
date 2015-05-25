@@ -9501,11 +9501,30 @@ let
 
     nvidiabl = callPackage ../os-specific/linux/nvidiabl { };
 
-    nvidia_x11_legacy173 = callPackage ../os-specific/linux/nvidia-x11/legacy173.nix { };
-    nvidia_x11_legacy304 = callPackage ../os-specific/linux/nvidia-x11/legacy304.nix { };
-    nvidia_x11_legacy340 = callPackage ../os-specific/linux/nvidia-x11/legacy340.nix { };
-    nvidia_x11_beta      = callPackage ../os-specific/linux/nvidia-x11/beta.nix { };
-    nvidia_x11           = callPackage ../os-specific/linux/nvidia-x11 { };
+    nvidia-drivers_legacy173 =callPackage ../os-specific/linux/nvidia-drivers/legacy173.nix {
+      kernel = kernel.dev;
+      buildConfig = "kernelspace";
+    };
+    nvidia-drivers_legacy304 = callPackage ../os-specific/linux/nvidia-drivers/legacy304.nix {
+      kernel = kernel.dev;
+      buildConfig = "kernelspace";
+    };
+    nvidia-drivers_legacy340 = callPackage ../os-specific/linux/nvidia-drivers/legacy340.nix {
+      kernel = kernel.dev;
+      buildConfig = "kernelspace";
+    };
+    nvidia-drivers = callPackage ../os-specific/linux/nvidia-drivers {
+      kernel = kernel.dev;
+      buildConfig = "kernelspace";
+    };
+    nvidia-drivers_latest = callPackage ../os-specific/linux/nvidia-drivers/latest.nix {
+      kernel = kernel.dev;
+      buildConfig = "kernelspace";
+    };
+    nvidia-drivers_testing = callPackage ../os-specific/linux/nvidia-drivers/testing.nix {
+      kernel = kernel.dev;
+      buildConfig = "kernelspace";
+    };
 
     openafsClient = callPackage ../servers/openafs-client { };
 
@@ -11828,6 +11847,25 @@ let
 
   nvi = callPackage ../applications/editors/nvi { };
 
+  nvidia-drivers_legacy173 =callPackage ../os-specific/linux/nvidia-drivers/legacy173.nix {
+    buildConfig = "userspace";
+  };
+  nvidia-drivers_legacy304 = callPackage ../os-specific/linux/nvidia-drivers/legacy304.nix {
+    buildConfig = "userspace";
+  };
+  nvidia-drivers_legacy340 = callPackage ../os-specific/linux/nvidia-drivers/legacy340.nix {
+    buildConfig = "userspace";
+  };
+  nvidia-drivers = callPackage ../os-specific/linux/nvidia-drivers {
+    buildConfig = "userspace";
+  };
+  nvidia-drivers_latest = callPackage ../os-specific/linux/nvidia-drivers/latest.nix {
+    buildConfig = "userspace";
+  };
+  nvidia-drivers_testing = callPackage ../os-specific/linux/nvidia-drivers/testing.nix {
+    buildConfig = "userspace";
+  };
+
   nvpy = callPackage ../applications/editors/nvpy { };
 
   obconf = callPackage ../tools/X11/obconf {
@@ -12558,20 +12596,20 @@ let
 
   primus = callPackage ../tools/X11/primus {
     primusLib = callPackage ../tools/X11/primus/lib.nix {
-      nvidia = linuxPackages.nvidia_x11;
+      nvidia = linuxPackages.nvidia-drivers;
     };
 
     primusLib_i686 = if system == "x86_64-linux"
       then callPackage_i686 ../tools/X11/primus/lib.nix {
-             nvidia = pkgsi686Linux.linuxPackages.nvidia_x11.override { libsOnly = true; };
+             nvidia = pkgsi686Linux.linuxPackages.nvidia-drivers.override { libsOnly = true; };
            }
       else null;
   };
 
   bumblebee = callPackage ../tools/X11/bumblebee {
-    nvidia_x11 = linuxPackages.nvidia_x11;
-    nvidia_x11_i686 = if system == "x86_64-linux"
-      then pkgsi686Linux.linuxPackages.nvidia_x11.override { libsOnly = true; }
+    nvidia-drivers = linuxPackages.nvidia-drivers;
+    nvidia-drivers_i686 = if system == "x86_64-linux"
+      then pkgsi686Linux.linuxPackages.nvidia-drivers.override { libsOnly = true; }
       else null;
     virtualgl = virtualgl;
     virtualgl_i686 = if system == "x86_64-linux"

@@ -1,66 +1,70 @@
-# This module provides the proprietary NVIDIA X11 / OpenGL drivers.
-
 { config, lib, pkgs, pkgs_i686, ... }:
 
-with lib;
+# This module provides the proprietary NVIDIA drivers
 
 let
-
   drivers = config.services.xserver.videoDrivers;
 
-  # FIXME: should introduce an option like
-  # ‘hardware.video.nvidia.package’ for overriding the default NVIDIA
-  # driver.
+  # FIXME: should introduce an option like ‘hardware.gpu.nvidia.package’
+  # for overriding the default NVIDIA driver.
   nvidiaForKernel = kernelPackages:
-    if elem "nvidia" drivers then
-        kernelPackages.nvidia_x11
-    else if elem "nvidiaLegacy173" drivers then
-      kernelPackages.nvidia_x11_legacy173
-    else if elem "nvidiaLegacy304" drivers then
-      kernelPackages.nvidia_x11_legacy304
+    if elem "nvidiaLegacy304" drivers then
+      kernelPackages.nvidia-drivers_legacy304
     else if elem "nvidiaLegacy340" drivers then
-      kernelPackages.nvidia_x11_legacy340
+      kernelPackages.nvidia-drivers_legacy340
+    else if elem "nvidia" drivers then
+        kernelPackages.nvidia-drivers
+    else if elem "nvidiaLatest" drivers then
+        kernelPackages.nvidia-drivers_latest
+    else if elem "nvidiaTesting" drivers then
+        kernelPackages.nvidia-drivers_testing
     else null;
 
-  nvidia_x11 = nvidiaForKernel config.boot.kernelPackages;
-  nvidia_libs32 = (nvidiaForKernel pkgs_i686.linuxPackages).override { libsOnly = true; kernel = null; };
+  nvidia-drivers = nvidiaForKernel config.boot.kernelPackages;
+  nvidia-drivers_libs32 = (nvidiaForKernel pkgs_i686.linuxPackages).override {
+    libsOnly = true;
+    kernel = null;
+  };
 
-  enabled = nvidia_x11 != null;
+  enabled = nvidia-drivers != null;
 in
 
 {
 
   config = mkIf enabled {
 
-    services.xserver.drivers = singleton
-      { name = "nvidia"; modules = [ nvidia_x11 ]; libPath = [ nvidia_x11 ]; };
+    services.xserver.drivers = singleton {
+      name = "nvidia";
+      modules = [ nvidia-drivers ];
+      libPath = [ nvidia-drivers ];
+    };
 
-    services.xserver.screenSection =
-      ''
-        Option "RandRRotation" "on"
-      '';
+    services.xserver.screenSection = ''
+      Option "RandRRotation" "on"
+    '';
 
-    hardware.opengl.package = nvidia_x11;
-    hardware.opengl.package32 = nvidia_libs32;
+    hardware.opengl.package = nvidia-drivers;
+    hardware.opengl.package32 = nvidia-drivers_libs32;
 
-    environment.systemPackages = [ nvidia_x11 ];
+    environment.systemPackages = [ nvidia-drivers ];
 
-    boot.extraModulePackages = [ nvidia_x11 ];
+    boot.extraModulePackages = [ nvidia-drivers ];
 
-    # nvidia-uvm is required by CUDA applications.
-    boot.kernelModules = [ "nvidia-uvm" ];
+    # nvidia-uvm is required by CUDA applications. (x86_64 only)
+    boot.kernelModules = optionals nvidia-drivers.cudaUVM [ "nvidia-uvm" ];
 
-    # Create /dev/nvidia-uvm when the nvidia-uvm module is loaded.
-    services.udev.extraRules =
-      ''
+    # Create /dev/nvidia-uvm when the nvidia-uvm module is loaded. (x86_64 only)
+    services.udev.extraRules = optionalString nvidia-drivers.cudaUVM ''
         KERNEL=="nvidia_uvm", RUN+="${pkgs.stdenv.shell} -c 'mknod -m 666 /dev/nvidia-uvm c $(grep nvidia-uvm /proc/devices | cut -d \  -f 1) 0'"
       '';
 
-    boot.blacklistedKernelModules = [ "nouveau" "nvidiafb" ];
+    boot.blacklistedKernelModules = [ "nouveau" "nvidiafb" "rivafb" "rivatv" ];
 
     services.acpid.enable = true;
 
-    environment.etc."OpenCL/vendors/nvidia.icd".source = "${nvidia_x11}/lib/vendors/nvidia.icd";
+    environment.etc."OpenCL/vendors/nvidia.icd".source = "${nvidia-drivers}/lib/vendors/nvidia.icd";
+    environment.etc."nvidia/nvidia-application-profiles-${nvidia-drivers.version}-rc".source = 
+      "${nvidia-drivers}/share/doc/nvidia-application-profiles-${nvidia-drivers.version}-rc";
 
   };
 
