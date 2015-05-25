@@ -99,7 +99,7 @@
 , libxcbshapeExtlib ? true # X11 grabbing shape rendering
 , libXv ? null # Xlib support
 , lzma ? null # xz-utils
-#, nvenc ? null # NVIDIA NVENC support
+, nvencExtlib ? true, linuxPackages # NVIDIA NVENC support
 , openal ? null # OpenAL 1.1 capture support
 #, opencl ? null # OpenCL code
 #, opencore-amr ? null # AMR-NB de/encoder & AMR-WB decoder
@@ -130,6 +130,7 @@
 , xvidcore ? null # Xvid encoder, native encoder exists
 , zeromq4 ? null # Message passing
 , zlib ? null
+#, linuxPackages
 #, zvbi ? null # Teletext support
 /*
  *  Developer options
@@ -174,6 +175,7 @@
 let
   inherit (stdenv) isCygwin isFreeBSD isLinux;
   inherit (stdenv.lib) optional optionals enableFeature;
+  nvenc = linuxPackages.nvidia_x11;
 in
 
 /*
@@ -352,7 +354,7 @@ stdenv.mkDerivation rec {
     (enableFeature libxcbxfixesExtlib "libxcb-xfixes")
     (enableFeature libxcbshapeExtlib "libxcb-shape")
     (enableFeature (lzma != null) "lzma")
-    #(enableFeature nvenc "nvenc")
+    (enableFeature (nvenc != null) "nvenc")
     (enableFeature (openal != null) "openal")
     #(enableFeature opencl "opencl")
     #(enableFeature (opencore-amr != null && version3Licensing) "libopencore-amrnb")
