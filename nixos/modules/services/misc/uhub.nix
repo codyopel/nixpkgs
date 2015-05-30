@@ -5,49 +5,55 @@ with lib;
 let
   cfg = config.services.uhub;
 
-  uhubPkg = pkgs.uhub.override { tlsSupport = cfg.tls; };
-
-  pluginConfig = ""
-    + optionalString cfg.plugins.authSqlite.enable ''
-      plugin ${uhubPkg.mod_auth_sqlite}/mod_auth_sqlite.so "file=${cfg.plugins.authSqlite.file}"
-    ''
-    + optionalString cfg.plugins.logging.enable ''
-      plugin ${uhubPkg.mod_logging}/mod_logging.so ${if cfg.plugins.logging.syslog then "syslog=true" else "file=${cfg.plugins.logging.file}"}
-    ''
-    + optionalString cfg.plugins.welcome.enable ''
-      plugin ${uhubPkg.mod_welcome}/mod_welcome.so "motd=${pkgs.writeText "motd.txt"  cfg.plugins.welcome.motd} rules=${pkgs.writeText "rules.txt" cfg.plugins.welcome.rules}"
-    ''
-    + optionalString cfg.plugins.history.enable ''
-      plugin ${uhubPkg.mod_chat_history}/mod_chat_history.so "history_max=${toString cfg.plugins.history.max} history_default=${toString cfg.plugins.history.default} history_connect=${toString cfg.plugins.history.connect}"
-    ''
-  ;
-
   uhubConfigFile = pkgs.writeText "uhub.conf" ''
-    file_acl=${pkgs.writeText "users.conf" cfg.aclConfig}
-    file_plugins=${pkgs.writeText "plugins.conf" pluginConfig}
+    hubname=${cfg.name}
+    hub_description=${cfg.description}
     server_bind_addr=${cfg.address}
     server_port=${toString cfg.port}
-    ${lib.optionalString cfg.enableTLS "tls_enable=yes"}
+    file_acl=${pkgs.writeText "users.conf" cfg.aclConfig}
+    file_plugins=${pkgs.writeText "plugins.conf" pluginConfig}
+    tls_enable=${
+      if cfg.tls.enable then
+        "yes"
+      else
+        "no"
+    } ${
+      if cfg.tls.enable then
+        "tls_require=yes
+        tls_private_key=${cfg.tls.privatekey}
+        tls_certificate=${cfg.tls.cert}"
+      else null
+    }
     ${cfg/gcc-5/.hubConfig}
+  '';
 
+  uhubPluginsConfigFile = pkgs.writeText "plugins.conf" ''
     # Plugins
-    ${if cfg.plugins.auth then
-        ${if cfg.plugins.auth.sqlite then
-            "plugin ${pkgs.uhub}/lib/uhub/mod_auth_sqlite.so \"file=${cfg.name}.users\""
-          else
-            "plugin ${pkgs.uhub}/lib/uhub/mod_auth_simple.so \"file=${cfg.name}.users.db\""}
-      else null}
-    ${if cfg.plugins.motd then
-        "plugin ${pkgs.uhub}/lib/uhub/mod_welcome.so \"motd=${cfg.name}.motd rules=${cfg.name}.motd.rules\""
-      else null}
-    ${if cfg.plugins.welcome then
-      else null}
-    ${if cfg.plugins.history then
-        "plugin ${cfg.uhub}/lib/mod_chat_history.so \"history_max_number history_default\""
-      else null}
-    ${if cfg.plugins.logging then
-        "plugin ${pkgs.uhub}/lib/uhub/mod_logging.so \"filename=${cfg.name}.log\""
-      else null}
+    plugin ${pkgs.uhub}/lib/plugins/mod_auth_sqlite.so "file=${cfg.database}"
+    ${
+      if cfg.plugins.welcome.enable then
+        "plugin ${pkgs.uhub}/lib/plugins/mod_welcome.so \
+          \"motd=${cfg.plugins.welcome.motd} \
+          rules=${cfg.plugins.welcome.rules}\""
+      else
+        null
+    } ${
+      if cfg.plugins.history then
+        "plugin ${pkgs.uhub}/lib/plugins/mod_chat_history.so \
+        \"file=${cfg.database} \
+          history_max=${toString cfg.plugins.chathistory.max} \
+          history_default=${toString cfg.plugins.chathistory.default} \
+          history_connect=${toString cfg.plugins.chathistory.connect}\""
+      else
+        null
+    } ${
+      if cfg.plugins.logging then
+        "plugin ${pkgs.uhub}/lib/plugins/mod_logging.so \
+          \"filename=${cfg.plugins.logging}\""
+      plugin ${uhubPlugin}/mod_logging.so ${if cfg.plugins.logging.syslog then "syslog=true" else "file=${cfg.plugins.logging.file}"}
+      else
+        null
+    }
   '';
 in
 
@@ -62,16 +68,16 @@ in
         description = "Whether to enable uhub ADC hub.";
       };
 
-      hubName = mkOption {
+      name = mkOption {
         type = types.string;
         default = "uhub";
-        description = "uhub";
+        description = "The name of your hub";
       };
 
-      hubDescription = mkOption {
+      description = mkOption {
         type = types.string;
-        default = "uhub";
-        description = "uhub on NixOS";
+        default = "Uhub on NixOS";
+        description = "The description of your hub";
       };
 
       port = mkOption {
@@ -86,42 +92,30 @@ in
         description = "Address to bind the hub to.";
       };
 
-      tls = mkOption {
-        type = types.bool;
-        default = true;
-        description = "Whether to enable TLS support.";
+      database = mkOption {
+        type = types.string;
+        default = "/var/db/uhub.db";
+        description = "Path to sqlite database. Use the uhub-passwd utility to create the database and add/remove users.";
       };
 
       users = mkOption {
         type = types.int;
         default = 150;
-        description = "";
+        description = "Max limit for users allowed on the hub";
       };
 
-      plugins = {
+      tls = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Enable TLS/SSL support";
+      };
 
-        userAuth = {
-          enable = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Authenticate users against database";
-          };
-          file = mkOption {
-            type = types.string;
-            example = "/var/db/uhub-users";
-            description = "Path to user database. Use the uhub-passwd utility to create the database and add/remove users.";
-          };
-          sqlite = mkOption {
-            type = types.bool;
-            default = true;
-            description = "Use sqlite database instead of a flat-file";
-          };
-        };
+      plugin = {
 
         logging = {
           enable = mkOption {
             type = types.bool;
-            default = false;
+            default = true;
             description = "Whether to enable the logging plugin.";
           };
           file = mkOption {
@@ -136,10 +130,6 @@ in
           };
         };
 
-        motd = {};
-
-        topic = {};
-
         welcome = {
           enable = mkOption {
             type = types.bool;
@@ -147,23 +137,21 @@ in
             description = "Whether to enable the welcome plugin.";
           };
           motd = mkOption {
-            default = "";
             type = types.lines;
+            default = "Welcome to Uhub on NixOS";
             description = ''
               Welcome message displayed to clients after connecting 
               and with the <literal>!motd</literal> command.
             '';
           };
           rules = mkOption {
-            default = "";
             type = types.lines;
-            description = ''
-              Rules message, displayed to clients with the <literal>!rules</literal> command.
-            '';
+            default = "";
+            description = "Rules message, displayed to clients with the <literal>!rules</literal> command.";
           };
         };
 
-        chatHistory = {
+        chathistory = {
           enable = mkOption {
             type = types.bool;
             default = false;
@@ -177,11 +165,11 @@ in
           default = mkOption {
             type = types.int;
             default = 10;
-            description = "When !history is provided without arguments, then this default number of messages are returned.";
+            description = "When <literal>!history</literal> is provided without arguments, then this default number of messages are returned.";
           };
           connect = mkOption {
             type = types.int;
-            default = 5;
+            default = 20;
             description = "The number of chat history messages to send when users connect (0 = do not send any history).";
           };
         };
@@ -205,7 +193,7 @@ in
     };
 
     systemd.services.uhub = {
-      description = "High performance peer-to-peer hub for the ADC network";
+      description = "High performance ADC (DC++) hub for peer-to-peer networks";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {

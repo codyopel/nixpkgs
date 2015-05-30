@@ -1,14 +1,11 @@
 { stdenv, fetchurl, cmake, pkgconfig
-, sqlite, systemd
-, tlsSupport ? true, openssl ? null
+, sqlite, systemd, openssl
+, stresstestSupport ? false
 }:
 
 let
-  inherit (stdenv.lib) optional;
   mkFlag = optset: flag: if optset then "-D${flag}=ON" else "-D${flag}=OFF";
 in
-
-assert tlsSupport -> openssl != null;
 
 stdenv.mkDerivation rec {
   name = "uhub-${version}";
@@ -20,28 +17,37 @@ stdenv.mkDerivation rec {
   };
 
   patchPhase = ''
-    # Install plugins to $out/lib/uhub/ instead of /usr/lib/uhub/
-    sed -e 's,/usr/lib/uhub/,lib/uhub/,' -i CMakeLists.txt
-    # Install configs to $out/share/doc/ instead of /etc/uhub
+    # Install plugins to $out/lib/plugins/ instead of /usr/lib/uhub/
+    sed -e 's,/usr/lib/uhub/,lib/plugins/,' -i CMakeLists.txt
+    # Install example configs to $out/share/doc/ instead of /etc/uhub
     sed -e 's,/etc/uhub,doc/,' -i CMakeLists.txt
   '';
 
   cmakeFlags = [
-    (mkFlag tlsSupport "SSL_SUPPORT")
-    (mkFlag tlsSupport "USE_OPENSSL")
+    "-DSSL_SUPPORT=ON"
+    "-DUSE_OPENSSL=ON"
     "-DSYSTEMD_SUPPORT=ON"
+    (mkFlag stresstestSupport "ADC_STRESS")
   ];
 
   nativeBuildInputs = [ cmake pkgconfig ];
 
-  buildInputs = [ sqlite systemd ]
-    ++ optional tlsSupport openssl;
+  buildInputs = [ openssl sqlite systemd ];
+
+  postInstall = ''
+    # Remove unsupported plugins
+    # This build uses sqlite as a backend and does not support plain-text storage
+    rm -f $out/lib/plugins/mod_auth_simple.so
+    rm -f $out/lib/plugins/mod_chat_history.so
+    # Example plugin does nothing
+    rm -f $out/lib/plugins/mod_example.so
+  '';
 
   meta = with stdenv.lib; {
-    description = "High performance peer-to-peer hub for the ADC network";
+    description = "High performance ADC (DC++) hub for peer-to-peer networks";
     homepage = https://www.uhub.org/;
     license = licenses.gpl3;
-    maintainers = with maintainers; [ emery ];
+    maintainers = with maintainers; [ codyopel emery ];
     platforms = platforms.unix;
   };
 }
