@@ -89,11 +89,11 @@ let
 
   # build paths and release info
   packageName = "chromium";
-  buildType = "Release";
-  buildPath = "out/${buildType}";
+  buildPath = "out/Release";
   buildTargets = [ "mksnapshot" "chrome" ];
   libExecPath = "$out/libexec/${packageName}";
 
+  # TODO: Move override to all-packages
   opusWithCustomModes = libopus.override {
     withCustomModes = true;
   };
@@ -348,15 +348,11 @@ stdenv.mkDerivation rec {
 
   buildPhase = let
     buildCommand = target: ''
-      "${ninja}/bin/ninja" -C "${buildPath}"  \
-        -j$NIX_BUILD_CORES -l$NIX_BUILD_CORES \
-        "${target}"
+      ${ninja}/bin/ninja -C out/Release -j$NIX_BUILD_CORES -l$NIX_BUILD_CORES ${target}
     '' + optionalString (target == "mksnapshot" || target == "chrome") ''
       paxmark m "${buildPath}/${target}"
     '';
-    targets = buildTargets; # or [];
-    commands = map buildCommand targets;
-  in concatStringsSep "\n" commands;
+  in concatStringsSep "\n" (map buildCommand buildTargets);
 
   installPhase = ''
     #mkdir -p "$libExecPath"
