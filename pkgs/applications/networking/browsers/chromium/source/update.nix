@@ -9,8 +9,7 @@ let
             then import ./sources.nix
             else null;
 
-  bucketURL = "http://commondatastorage.googleapis.com/"
-            + "chromium-browser-official";
+  bucketURL = "http://commondatastorage.googleapis.com/chromium-browser-official";
 
   debURL = "https://dl.google.com/linux/chrome/deb/pool/main/g";
 

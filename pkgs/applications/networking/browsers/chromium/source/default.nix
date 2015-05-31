@@ -18,17 +18,8 @@ let
     "s,^/,,"
   ]);
 
-  pre42 = versionOlder version "42.0.0.0";
-
 in stdenv.mkDerivation {
   name = "chromium-source-${version}";
-
-  src = fetchurl main;
-
-  buildInputs = [ python ]; # cannot patch shebangs otherwise
-
-  phases = [ "unpackPhase" "patchPhase" ];
-  outputs = [ "out" "sandbox" "bundled" "main" ];
 
   unpackPhase = ''
     tar xf "$src" -C / \
@@ -38,20 +29,6 @@ in stdenv.mkDerivation {
       --exclude='*/tools/gyp' \
       --exclude='*/.*'
   '';
-
-  opensslPatches = optional useOpenSSL openssl.patches;
-
-  prePatch = ''
-    for i in $outputs; do
-      eval patchShebangs "\$$i"
-    done
-  '';
-
-  patches = if pre42 then [
-    ./sandbox_userns_36.patch ./nix_plugin_paths.patch
-  ] else [
-    ./nix_plugin_paths_42.patch
-  ];
 
   patchPhase = let
     diffmod = sym: "/^${sym} /{s/^${sym} //;${transform ""};s/^/${sym} /}";
@@ -65,19 +42,6 @@ in stdenv.mkDerivation {
       stopNest
     done
     runHook postPatch
-  '';
-
-  postPatch = ''
-    sed -i -r \
-      -e 's/-f(stack-protector)(-all)?/-fno-\1/' \
-      -e 's|/bin/echo|echo|' \
-      -e "/python_arch/s/: *'[^']*'/: '""'/" \
-      "$out/build/common.gypi" "$main/chrome/chrome_tests.gypi"
-  '' + optionalString useOpenSSL ''
-    cat $opensslPatches | patch -p1 -d "$bundled/openssl/openssl"
-  '' + optionalString (!pre42) ''
-    sed -i -e '/LOG.*no_suid_error/d' \
-      "$main/content/browser/browser_main_loop.cc"
   '';
 
   preferLocalBuild = true;

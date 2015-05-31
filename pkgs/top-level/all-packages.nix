@@ -10616,19 +10616,20 @@ let
 
   chatzilla = callPackage ../applications/networking/irc/chatzilla { };
 
+  chrome-binary-plugins = ../applications/networking/browsers/chromium/chrome-binary-plugins.nix;
+
   chromium = callPackage ../applications/networking/browsers/chromium {
     channel = "stable";
     pulseSupport = config.pulseaudio or true;
     enablePepperFlash = config.chromium.enablePepperFlash or false;
     enableWideVine = config.chromium.enableWideVine or false;
+    proprietaryCodecs = config.chromium.proprietaryCodecs or false;
     hiDPISupport = config.chromium.hiDPISupport or false;
   };
+  chromiumBeta = lowPrio (chromium.override { channel = "beta"; });
+  chromiumDev = lowPrio (chromium.override { channel = "dev"; });
 
   chronos = callPackage ../applications/networking/cluster/chronos { };
-
-  chromiumBeta = lowPrio (chromium.override { channel = "beta"; });
-
-  chromiumDev = lowPrio (chromium.override { channel = "dev"; });
 
   chuck = callPackage ../applications/audio/chuck { };
 
