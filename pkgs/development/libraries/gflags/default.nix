@@ -1,4 +1,4 @@
-{ stdenv, fetchurl }:
+{ stdenv, fetchurl, cmake }:
 
 stdenv.mkDerivation rec {
   name = "gflags-${version}";
@@ -6,19 +6,23 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "https://github.com/gflags/gflags/archive/v${version}.tar.gz";
-    sha256 = "1mypfahsfy0piavhf7il2jfsxgq7jp6yarl9sq5hhypj34s5sjnf";
+    sha256 = "0qi6bibybqffbzx7cwjbs87s0s38x62mwpybbzyqlz1nyz81ncyq";
   };
 
   cmakeFlags = [
-    "-DCMAKE_INSTALL_PREFIX=$(out)"
-    "-DBUILD_SHARED_LIBS=ON"
-    "-DBUILD_STATIC_LIBS=OFF"
-    "-DBUILD_gflags_LIB=ON"
-    "-DBUILD_gflags_nothreads_LIB=OFF"
-    "-DBUILD_PACKAGING=ON"
-    "-DINSTALL_HEADERS=ON"
-    "-DGFLAGS_NAMESPACE=gflags"
+    #"-DCMAKE_INSTALL_PREFIX=$(out)"
+    #"-DBUILD_SHARED_LIBS=ON"
+    #"-DBUILD_STATIC_LIBS=OFF"
+    #"-DBUILD_gflags_LIB=ON"
+    #"-DBUILD_gflags_nothreads_LIB=OFF"
+    #"-DBUILD_PACKAGING=OFF"
+    #"-DINSTALL_HEADERS=ON"
+    #"-DGFLAGS_NAMESPACE=gflags"
   ];
+
+  nativeBuildInputs = [ cmake ];
+
+  buildInputs = [ ];
 
   doCheck = true;
 

@@ -760,7 +760,7 @@ let
   cdemu-client = callPackage ../misc/emulators/cdemu/client.nix { };
 
   ceres-solver = callPackage ../development/libraries/ceres-solver {
-    google-gflags = null; # only required for examples/tests
+    gflags = null; # only required for examples/tests
   };
 
   gcdemu = callPackage ../misc/emulators/cdemu/gui.nix { };
@@ -6083,6 +6083,8 @@ let
 
   gdcm = callPackage ../development/libraries/gdcm { };
 
+  gflags = callPackage ../development/libraries/gflags { };
+
   ggz_base_libs = callPackage ../development/libraries/ggz_base_libs {};
 
   giblib = callPackage ../development/libraries/giblib { };
@@ -6173,8 +6175,6 @@ let
   gobjectIntrospection = callPackage ../development/libraries/gobject-introspection { };
 
   goocanvas = callPackage ../development/libraries/goocanvas { };
-
-  google-gflags = callPackage ../development/libraries/google-gflags { };
 
   gperftools = callPackage ../development/libraries/gperftools { };
 
