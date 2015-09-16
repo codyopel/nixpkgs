@@ -9711,11 +9711,27 @@ let
 
     nvidiabl = callPackage ../os-specific/linux/nvidiabl { };
 
-    nvidia_x11_legacy173 = callPackage ../os-specific/linux/nvidia-x11/legacy173.nix { };
-    nvidia_x11_legacy304 = callPackage ../os-specific/linux/nvidia-x11/legacy304.nix { };
-    nvidia_x11_legacy340 = callPackage ../os-specific/linux/nvidia-x11/legacy340.nix { };
-    nvidia_x11_beta      = callPackage ../os-specific/linux/nvidia-x11/beta.nix { };
-    nvidia_x11           = callPackage ../os-specific/linux/nvidia-x11 { };
+    nvidia-drivers_legacy340 = callPackage ../os-specific/linux/nvidia-drivers/legacy340.nix {
+      kernel = kernel.dev;
+      buildConfig = "all";
+      gtk2Support = true;
+      gtk3Support = false;
+      cairo = null;
+      gtk3 = null;
+    };
+    nvidia-drivers = callPackage ../os-specific/linux/nvidia-drivers {
+      kernel = kernel.dev;
+      buildConfig = "all";
+      gtk2Support = false;
+      gtk2 = null;
+    };
+    nvidia-drivers_latest = callPackage ../os-specific/linux/nvidia-drivers/latest.nix {
+      kernel = kernel.dev;
+      buildConfig = "all";
+      gtk2Support = false;
+      gtk2 = null;
+    };
+    nvidia-drivers_testing = callPackage ../os-specific/linux/nvidia-drivers/testing.nix { };
 
     rtl8812au = callPackage ../os-specific/linux/rtl8812au { };
 
