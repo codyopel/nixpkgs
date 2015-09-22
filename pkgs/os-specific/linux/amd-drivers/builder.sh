@@ -8,13 +8,54 @@
 # Fail on any error
 set -e
 
-installAmdBin()
+installAmdBin() {
 
-installAmdHeader()
+}
 
-installAmdLib()
+installAmdHeader() {
 
-installAmdMan()
+}
+
+installAmdLib() {
+
+  local initial_path
+
+  case "${1}" in
+    'a') # arch/...
+      if [ "${system}" == 'i686-linux' ] ; then
+        initial_path="arch/x86/"
+      elif [ "${system}" == 'x86_64-linux' ] ; then
+        initial_path='arch/x86_64/'
+      fi
+      ;;
+    'c') # common/...
+      initial_path='common/'
+      ;;
+    'x') # xpic/...
+      if [ "${system}" == 'i686-linux' ] ; then
+        initial_path='xpic/usr/X11R6/lib/modules/'
+      elif [ "${system}" == 'x86_64' ] ; then
+        initial_path='xpic_64a/usr/X11R6/lib64/modules/'
+      fi
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+
+  if [ -z "${initial_path}" ] ; then
+    return 1
+  fi
+
+  cp "${initial_path}/${2}" "${3}"
+
+  # TODO: *.so.* versions
+
+}
+
+installAmdMan() {
+
+}
 
 unpackFile() {
 
@@ -53,20 +94,13 @@ unpackFile() {
   sourceRoot="$(pwd)"
   export sourceRoot
 
+}
 
-  # custom unpack:
-  #mkdir fglrx
-  #cd fglrx
-  #unzip $src
-  #cd ..
-  #run_file=$(echo fglrx/amd-driver-installer-*)
-  #sh $run_file --extract .
+buildPhase() {
 
 }
 
-buildPhase()
-
-amdKernelspace(){
+amdKernelspace() {
 
   local kernelBuild
   local kernelSource
@@ -191,7 +225,61 @@ amdKernelspace(){
 
 amdUserspace() {
 
+  # The fuck kind of structure is this amd
+  #common/etc/ati/*
+  #common/etc/security/console.apps/*
+  #common/lib/modules/fglrx/*
+  #common/lib/modules/fglrx/build_mod/*
+  #common/lib/modules/fglrx/build_mod/2.6.x/*
+  #common/usr/include/ATI/GL/*
+  #common/usr/include/GL/*
+  #common/usr/sbin/*
+  #common/usr/share/applications/*
+  #common/usr/share/ati/amdcccle/*
+  #common/usr/share/doc/amdcccle/*
+  #common/usr/share/doc/fglrx/***
+  #common/usr/share/icons/*
+  #common/usr/share/man/man8/*
+  #common/usr/src/ati/*
+  #common/usr/X11R6/bin/*
+  #arch/x86/etc/OpenCL/vendors/*
+  #arch/x86/lib/modules/fglrx/build_mod/*
+  #arch/x86/usr/bin/*
+  #arch/x86/usr/lib/*
+  #arch/x86/usr/lib/fglrx/*
+  #arch/x86/usr/sbin/*
+  #arch/x86/usr/share/ati/lib/*
+  #arch/x86/usr/X11R6/bin/*
+  #arch/x86/usr/X11R6/lib/*
+  #arch/x86/usr/X11R6/lib/fglrx/*
+  #arch/x86/usr/X11R6/lib/modules/dri/*
+  #arch/x86_64/etc/OpenCL/vendors/*
+  #arch/x86_64/lib/modules/fglrx/build_mod/*
+  #arch/x86_64/usr/bin/*
+  #arch/x86_64/usr/lib/*
+  #arch/x86_64/usr/lib/fglrx/*
+  #arch/x86_64/usr/sbin/*
+  #arch/x86_64/usr/share/ati/lib/*
+  #arch/x86_64/usr/X11R6/bin/*
+  #arch/x86_64/usr/X11R6/lib/*
+  #arch/x86_64/usr/X11R6/lib/fglrx/*
+  #arch/x86_64/usr/X11R6/lib/modules/dri/*
+  #xpic/usr/X11R6/lib/modules/*
+  #xpic/usr/X11R6/lib/modules/drivers/*
+  #xpic/usr/X11R6/lib/modules/extensions/fglrx/*
+  #xpic/usr/X11R6/lib/modules/linux/*
+  #xpic_64a/usr/X11R6/lib64/modules/*
+  #xpic_64a/usr/X11R6/lib64/modules/drivers/*
+  #xpic_64a/usr/X11R6/lib64/modules/extensions/fglrx/*
+  #xpic_64a/usr/X11R6/lib64/modules/linux/*
 
+  installAmdLib "${arch}/usr/X11R6/${arch_lib}/modules/drivers/fglrx_drv.so" 'lib/xorg/modules/drivers'
+  installAmdLib "${arch}/usr/X11R6/${arch_lib}/modules/extensions/fglrx/fglrx-libglx.so" 'lib/xorg/modules/drivers'
+  installAmdLib "${arch}/usr/X11R6/${arch_lib}/modules/linux/libfglrxdrm.so" 'lib/xorg/modules/linux'
+  installAmdLib "${arch}/usr/X11R6/${arch_lib}/modules/amdxmm.so" 'lib/xorg/modules'
+  installAmdLib "${arch}/usr/X11R6/${arch_lib}/modules/glesx.so" 'lib/xorg/modules'
+
+  installAmdBin ""
 
 }
 
