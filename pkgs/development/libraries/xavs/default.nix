@@ -32,6 +32,6 @@ stdenv.mkDerivation rec {
     homepage    = http://xavs.sourceforge.net/;
     license     = licenses.lgpl2;
     platforms   = platforms.linux;
-    maintainers = with maintainers; [ codyopel ];
+    maintainers = with maintainers; [ ];
   };
 }

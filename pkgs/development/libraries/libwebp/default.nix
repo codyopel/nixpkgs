@@ -62,6 +62,6 @@ stdenv.mkDerivation rec {
     homepage = https://developers.google.com/speed/webp/;
     license = licenses.bsd3;
     platforms = platforms.all;
-    maintainers = with maintainers; [ codyopel ];
+    maintainers = with maintainers; [ ];
   };
 }

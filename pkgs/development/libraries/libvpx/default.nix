@@ -177,7 +177,7 @@ stdenv.mkDerivation rec {
     description = "WebM VP8/VP9 codec SDK";
     homepage    = http://www.webmproject.org/;
     license     = licenses.bsd3;
-    maintainers = with maintainers; [ codyopel ];
+    maintainers = with maintainers; [ ];
     platforms   = platforms.all;
   };
 }

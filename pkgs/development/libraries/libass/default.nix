@@ -47,7 +47,7 @@ stdenv.mkDerivation rec {
     homepage    = https://github.com/libass/libass;
     license     = licenses.isc;
     platforms   = platforms.unix;
-    maintainers = with maintainers; [ codyopel ];
+    maintainers = with maintainers; [ ];
     repositories.git = git://github.com/libass/libass.git;
   };
 }

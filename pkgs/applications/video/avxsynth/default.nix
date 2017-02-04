@@ -36,7 +36,7 @@ stdenv.mkDerivation rec {
     description = "A script system that allows advanced non-linear editing";
     homepage = https://github.com/avxsynth/avxsynth;
     license = licenses.gpl2Plus;
-    maintainers = with maintainers; [ codyopel viric ];
+    maintainers = with maintainers; [ viric ];
     platforms = platforms.linux;
   };
 }

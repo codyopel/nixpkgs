@@ -18,6 +18,6 @@ stdenv.mkDerivation rec {
     homepage    = http://www.wavpack.com/;
     license     = licenses.bsd3;
     platforms   = platforms.unix;
-    maintainers = with maintainers; [ codyopel ];
+    maintainers = with maintainers; [ ];
   };
 }

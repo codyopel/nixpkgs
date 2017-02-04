@@ -19,7 +19,7 @@ stdenv.mkDerivation rec {
     description = "A set of utilities for working with cue files and toc files";
     homepage = https://github.com/svend/cuetools;
     license = licenses.gpl2;
-    maintainers = with maintainers; [ codyopel jcumming ];
+    maintainers = with maintainers; [ jcumming ];
     platforms = platforms.all;
   };
 }

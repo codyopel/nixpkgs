@@ -59,7 +59,7 @@ stdenv.mkDerivation rec {
     description = "Library for encoding h.265/HEVC video streams";
     homepage    = http://x265.org;
     license     = licenses.gpl2;
-    maintainers = with maintainers; [ codyopel ];
+    maintainers = with maintainers; [ ];
     platforms   = platforms.all;
   };
 }

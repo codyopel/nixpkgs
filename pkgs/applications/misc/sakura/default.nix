@@ -20,7 +20,7 @@ stdenv.mkDerivation rec {
     description = "A terminal emulator based on GTK and VTE";
     homepage    = http://www.pleyades.net/david/projects/sakura;
     license     = licenses.gpl2;
-    maintainers = with maintainers; [ astsmtl codyopel ];
+    maintainers = with maintainers; [ astsmtl ];
     platforms   = platforms.linux;
     longDescription = ''
       sakura is a terminal emulator based on GTK and VTE. It's a terminal

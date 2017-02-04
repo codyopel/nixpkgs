@@ -49,7 +49,7 @@ stdenv.mkDerivation rec {
     description = "V4L utils and libv4l, provide common image formats regardless of the v4l device";
     homepage = http://linuxtv.org/projects.php;
     license = licenses.lgpl21Plus;
-    maintainers = with maintainers; [ codyopel viric ];
+    maintainers = with maintainers; [ viric ];
     platforms = platforms.linux;
   };
 }
